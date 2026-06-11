@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="每日一句书摘，在文字与风景中寻得片刻宁静。">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <title>呼吸 · 每日书摘</title>
+  <style>
+    :root {
+      --color-bg-fallback:    #1a1a2e;
+      --color-text-primary:   rgba(255, 255, 255, 0.95);
+      --color-text-secondary: rgba(255, 255, 255, 0.70);
+      --color-text-muted:     rgba(255, 255, 255, 0.45);
+      --color-overlay:        rgba(0, 0, 0, 0.35);
+      --font-serif:   'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      --font-size-quote:      1.5rem;
+      --font-size-source:     0.9rem;
+      --font-size-dev:        0.7rem;
+      --line-height-quote:    1.8;
+      --letter-spacing-source: 0.05em;
+      --letter-spacing-dev:   0.08em;
+      --padding-quote-vertical:  2rem;
+      --padding-quote-horizontal: 1.5rem;
+      --max-width-quote:         85vw;
+      --ease-out-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-slow:    1.5s;
+      --duration-medium:  1.2s;
+      --duration-fast:    0.8s;
+      --duration-switch:  0.6s;
+    }
+    /* ===== 启动页（Splash Screen）样式 ===== */
+    #splash-screen {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      z-index: 9999;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      background-color: var(--color-bg-fallback);
+      opacity: 1;
+      transition: opacity var(--duration-slow) var(--ease-out-expo);
+      pointer-events: all;
+    }
+    #splash-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash-screen.hidden {
+      display: none;
+    }
+    .splash-icon {
+      width: 48px; height: 48px;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: splashFadeIn 0.8s var(--ease-out-expo) forwards;
+    }
+    .splash-icon svg {
+      width: 100%; height: 100%;
+      display: block;
+    }
+    .splash-text {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      font-weight: 400;
+      line-height: 1.9;
+      color: rgba(255, 255, 255, 0.80);
+      text-align: center;
+      letter-spacing: 0.12em;
+      padding: 0 2rem;
+      max-width: 320px;
+      opacity: 0;
+      animation: splashFadeIn 1.0s var(--ease-out-expo) forwards;
+      animation-delay: 0.3s;
+    }
+    @keyframes splashFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (min-width: 480px) {
+      .splash-icon { width: 56px; height: 56px; margin-bottom: 2.5rem; }
+      .splash-text { font-size: 1.2rem; max-width: 360px; }
+    }
+    @media (min-width: 768px) {
+      .splash-icon { width: 64px; height: 64px; margin-bottom: 3rem; }
+      .splash-text { font-size: 1.3rem; max-width: 400px; }
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: var(--font-sans);
+      background-color: var(--color-bg-fallback);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #app {
+      position: relative; width: 100vw; height: 100vh;
+      display: flex; justify-content: center; align-items: center; overflow: hidden;
+    }
+    #bg-layer {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      overflow: hidden; z-index: 0;
+    }
+    .bg-placeholder {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; filter: blur(20px); transform: scale(1.1);
+      opacity: 0; transition: opacity var(--duration-slow) ease;
+    }
+    .bg-placeholder.visible { opacity: 1; }
+    .bg-full {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0; transition: opacity var(--duration-fast) ease;
+    }
+    .bg-full.visible { opacity: 1; }
+    #overlay {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      background: linear-gradient(135deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.35) 100%);
+      z-index: 1; pointer-events: none;
+    }
+    #content {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      width: 100%; height: 100%;
+      padding: var(--padding-quote-vertical) var(--padding-quote-horizontal);
+      cursor: pointer;
+    }
+    #quote-container {
+      max-width: var(--max-width-quote); text-align: center;
+      padding: var(--padding-quote-vertical) 0;
+    }
+    #quote-text {
+      font-family: var(--font-serif); font-size: var(--font-size-quote);
+      font-weight: 400; line-height: var(--line-height-quote);
+      color: var(--color-text-primary); margin: 0; padding: 0; position: relative;
+    }
+    #quote-source {
+      font-family: var(--font-sans); font-size: var(--font-size-source);
+      font-weight: 300; letter-spacing: var(--letter-spacing-source);
+      color: var(--color-text-secondary); margin-top: 1.5rem; padding-top: 1.2rem; position: relative;
+    }
+    #quote-source::before {
+      content: ''; display: block; width: 1.5rem; height: 1px;
+      background: var(--color-text-secondary); margin: 0 auto 1.2rem auto; opacity: 0.5;
+    }
+    #dev-message {
+      position: absolute; bottom: 2.5rem; left: 0; right: 0; text-align: center;
+      font-family: var(--font-sans); font-size: var(--font-size-dev);
+      font-weight: 300; letter-spacing: var(--letter-spacing-dev);
+      color: var(--color-text-muted); padding: 0 1.5rem;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOutDown {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(20px); }
+    }
+    .animate-enter { animation: fadeInUp var(--duration-medium) var(--ease-out-expo) forwards; }
+    .animate-enter-delayed-1 { animation: fadeInUp var(--duration-medium) var(--ease-out-expo) forwards; animation-delay: 0.3s; }
+    .animate-enter-delayed-2 { animation: fadeInUp var(--duration-medium) var(--ease-out-expo) forwards; animation-delay: 0.6s; }
+    .animate-exit { animation: fadeOutDown var(--duration-switch) ease-in forwards; }
+    .anim-ready { opacity: 0; transform: translateY(30px); }
+    #quote-container.switching #quote-text,
+    #quote-container.switching #quote-source { animation: fadeOutDown var(--duration-switch) ease-in forwards; }
+    #quote-container.switching ~ #dev-message { animation: fadeOutDown var(--duration-switch) ease-in forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+      .anim-ready { opacity: 1; transform: translateY(0); }
+    }
+    @media (min-width: 480px) {
+      :root { --font-size-quote: 1.8rem; --font-size-source: 1.0rem; --font-size-dev: 0.75rem; --padding-quote-vertical: 2.5rem; --padding-quote-horizontal: 2rem; --max-width-quote: 75vw; }
+      #dev-message { bottom: 3rem; }
+    }
+    @media (min-width: 768px) {
+      :root { --font-size-quote: 2.2rem; --font-size-source: 1.1rem; --font-size-dev: 0.8rem; --padding-quote-vertical: 3rem; --padding-quote-horizontal: 2.5rem; --max-width-quote: 640px; }
+      #quote-source::before { width: 2rem; }
+      #dev-message { bottom: 3.5rem; }
+    }
+    @media (min-width: 1024px) {
+      :root { --font-size-quote: 2.4rem; --padding-quote-vertical: 4rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== 启动页：全屏遮罩，展示"其实，生命只需要呼吸" ===== -->
+  <div id="splash-screen" aria-label="启动画面">
+    <div class="splash-icon">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 32 C20 20, 44 20, 44 32" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M20 32 C20 44, 44 44, 44 32" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <div class="splash-text">其实，生命只需要呼吸</div>
+  </div>
+
+  <div id="app">
+    <div id="bg-layer">
+      <img id="bg-placeholder" class="bg-placeholder" alt="" aria-hidden="true">
+      <img id="bg-full" class="bg-full" alt="自然风景" aria-hidden="true">
+    </div>
+    <div id="overlay"></div>
+    <main id="content">
+      <div id="quote-container">
+        <blockquote id="quote-text"></blockquote>
+        <footer id="quote-source"></footer>
+      </div>
+      <div id="dev-message"></div>
+    </main>
+  </div>
+  <script>
+    /**
+     * 呼吸 · 书摘数据 + 应用逻辑（内联）
+     *
+     * 100+ 条书摘，来自国内外经典好书，每条配独立高清纯自然风景照（Unsplash）。
+     * 每次打开随机展示一条，点击任意处随机切换（Fisher-Yates 洗牌）。
+     */
+    var quotes = [
+      // ===== 中国古典文学 =====
+      { id:'q001', quote:'天地有大美而不言，四时有明法而不议，万物有成理而不说。', author:'庄子', book_title:'庄子·知北游', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'天地不言，而美自在。愿你在喧嚣中，仍能听见寂静的回响。', mood:'辽阔' },
+      { id:'q002', quote:'人法地，地法天，天法道，道法自然。', author:'老子', book_title:'道德经·第二十五章', image_url:'https://images.unsplash.com/photo-1470071459604-7b8ec44ffd4b?w=1920&q=80', image_credit:'v2osk', developer_message:'回归自然，便是回归自己。', mood:'宁静' },
+      { id:'q003', quote:'采菊东篱下，悠然见南山。', author:'陶渊明', book_title:'饮酒·其五', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'心中有南山，何处不悠然。', mood:'闲适' },
+      { id:'q004', quote:'竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。', author:'苏轼', book_title:'定风波·莫听穿林打叶声', image_url:'https://images.unsplash.com/photo-1518173946687-a36f968f7e98?w=1920&q=80', image_credit:'zoltantasi', developer_message:'风雨本是寻常事，不妨从容以对。', mood:'豁达' },
+      { id:'q005', quote:'行到水穷处，坐看云起时。', author:'王维', book_title:'终南别业', image_url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80', image_credit:'davidmarcu', developer_message:'路到尽头，不妨抬头看云。', mood:'禅意' },
+      { id:'q006', quote:'不以物喜，不以己悲。', author:'范仲淹', book_title:'岳阳楼记', image_url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'心若不动，万事从容。', mood:'平静' },
+      { id:'q007', quote:'知者乐水，仁者乐山。知者动，仁者静。知者乐，仁者寿。', author:'孔子', book_title:'论语·雍也', image_url:'https://images.unsplash.com/photo-1440581572842-9e4a284d0e5c?w=1920&q=80', image_credit:'jplenio', developer_message:'山水之间，自有智慧与仁爱。', mood:'宁静' },
+      { id:'q008', quote:'己所不欲，勿施于人。', author:'孔子', book_title:'论语·颜渊', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'推己及人，是最朴素的善良。', mood:'温暖' },
+      { id:'q009', quote:'上善若水。水善利万物而不争，处众人之所恶，故几于道。', author:'老子', book_title:'道德经·第八章', image_url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'像水一样，利万物而不争。', mood:'宁静' },
+      { id:'q010', quote:'人生如逆旅，我亦是行人。', author:'苏轼', book_title:'临江仙·送钱穆父', image_url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', image_credit:'milesb', developer_message:'我们都是这世间的过客，不妨从容而行。', mood:'豁达' },
+      { id:'q011', quote:'宠辱不惊，看庭前花开花落；去留无意，望天上云卷云舒。', author:'陈继儒', book_title:'小窗幽记', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'宠辱不惊，去留无意。', mood:'闲适' },
+      { id:'q012', quote:'人生得意须尽欢，莫使金樽空对月。', author:'李白', book_title:'将进酒', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'活在当下，尽欢而散。', mood:'豁达' },
+      { id:'q013', quote:'此中有真意，欲辨已忘言。', author:'陶渊明', book_title:'饮酒·其五', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'真正的美好，往往无法言说。', mood:'禅意' },
+      { id:'q014', quote:'江畔何人初见月？江月何年初照人？人生代代无穷已，江月年年望相似。', author:'张若虚', book_title:'春江花月夜', image_url:'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=1920&q=80', image_credit:'wolfgang_hasselmann', developer_message:'江月永恒，人生代代。', mood:'辽阔' },
+      { id:'q015', quote:'落霞与孤鹜齐飞，秋水共长天一色。', author:'王勃', book_title:'滕王阁序', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'天地一色，心也随之辽阔。', mood:'辽阔' },
+      // ===== 中国现当代文学 =====
+      { id:'q016', quote:'太阳，他每时每刻都是夕阳也都是旭日。当他熄灭着走下山去收尽苍凉残照之际，正是他在另一面燃烧着爬上山巅布散烈烈朝晖之时。', author:'史铁生', book_title:'我与地坛', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'日落之处，必有日出。', mood:'温暖' },
+      { id:'q017', quote:'从前的日色变得慢，车，马，邮件都慢，一生只够爱一个人。', author:'木心', book_title:'从前慢', image_url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?w=1920&q=80', image_credit:'michalmatczuk', developer_message:'慢下来，才能看见生活本来的样子。', mood:'怀旧' },
+      { id:'q018', quote:'一个人只拥有此生此世是不够的，他还应该拥有诗意的世界。', author:'王小波', book_title:'万寿寺', image_url:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80', image_credit:'davidmarcu', developer_message:'诗意不在远方，而在你凝视世界的目光里。', mood:'浪漫' },
+      { id:'q019', quote:'人是为了活着本身而活着，而不是为了活着之外的任何事物而活着。', author:'余华', book_title:'活着', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'活着，本身就是全部的意义。', mood:'深沉' },
+      { id:'q020', quote:'人生不过如此，且行且珍惜。自己永远是自己的主角，不要总在别人的戏剧里充当着配角。', author:'林语堂', book_title:'人生不过如此', image_url:'https://images.unsplash.com/photo-1439853949127-fa647821eba0?w=1920&q=80', image_credit:'dross2001', developer_message:'你是自己人生的主角，别把剧本交给别人。', mood:'温暖' },
+      { id:'q021', quote:'生活不能等待别人来安排，要自己去争取和奋斗；而不论其结果是喜是悲，但可以慰藉的是，你总不枉在这世界上活了一场。', author:'路遥', book_title:'平凡的世界', image_url:'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80', image_credit:'marcuslenk', developer_message:'奋斗本身，就是对生命最好的致敬。', mood:'力量' },
+      { id:'q022', quote:'世间好物不坚牢，彩云易散琉璃脆。', author:'杨绛', book_title:'我们仨', image_url:'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=1920&q=80', image_credit:'wolfgang_hasselmann', developer_message:'正因易逝，才更珍贵。', mood:'感怀' },
+      { id:'q023', quote:'围在城里的人想逃出来，城外的人想冲进去，对婚姻也罢，职业也罢，人生的愿望大都如此。', author:'钱钟书', book_title:'围城', image_url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80', image_credit:'davidmarcu', developer_message:'知足常乐，珍惜眼前。', mood:'哲思' },
+      { id:'q024', quote:'人生忽如寄，莫辜负茶、汤和好天气。', author:'汪曾祺', book_title:'人间草木', image_url:'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=1920&q=80', image_credit:'anniespratt', developer_message:'不辜负每一杯茶，每一片好天气。', mood:'闲适' },
+      { id:'q025', quote:'家人闲坐，灯火可亲。', author:'汪曾祺', book_title:'冬天', image_url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?w=1920&q=80', image_credit:'michalmatczuk', developer_message:'最温暖的，不过是一盏灯下的团圆。', mood:'温暖' },
+      { id:'q026', quote:'人的一生，苦也罢，乐也罢，得也罢，失也罢——要紧的是心间的一泓清泉里不能没有月辉。', author:'贾平凹', book_title:'明月清泉自在怀', image_url:'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=1920&q=80', image_credit:'wolfgang_hasselmann', developer_message:'心中有月辉，便不惧黑暗。', mood:'宁静' },
+      { id:'q027', quote:'生命是有光的。在我熄灭以前，能够照亮你一点，就是我所有能做的了。', author:'张嘉佳', book_title:'云边有个小卖部', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'做一束光，哪怕微弱。', mood:'温暖' },
+      { id:'q028', quote:'愿你在被打击时，记起你的珍贵，抵抗恶意；愿你在迷茫时，坚信你的珍贵。', author:'刘瑜', book_title:'愿你慢慢长大', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'你本就珍贵。', mood:'温暖' },
+      { id:'q029', quote:'没有什么比时间更具有说服力了，因为时间无需通知我们就可以改变一切。', author:'余华', book_title:'活着', image_url:'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80', image_credit:'marcuslenk', developer_message:'时间不语，却回答了所有问题。', mood:'深沉' },
+      { id:'q030', quote:'人生最遗憾的，莫过于轻易地放弃了不该放弃的，固执地坚持了不该坚持的。', author:'柏拉图', book_title:'理想国', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'学会放下，也学会坚持。', mood:'哲思' },
+      // ===== 日本文学 =====
+      { id:'q031', quote:'不必太纠结于当下，也不必太忧虑未来，当你经历过一些事情的时候，眼前的风景已经和从前不一样了。', author:'村上春树', book_title:'1Q84', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'风景会变，你也会变，这本身就是成长。', mood:'宁静' },
+      { id:'q032', quote:'我们每个人，都在寻找属于自己的风景。也许那风景并不在远方，而在我们每天走过的路上，只是我们从未真正看见。', author:'星野道夫', book_title:'在漫长的旅途中', image_url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', image_credit:'milesb', developer_message:'最美的风景，往往就在身边。', mood:'辽阔' },
+      { id:'q033', quote:'无论做什么事，都要想到"这是最后一次"。如果这是最后一次见面，你会怎样对待眼前这个人？如果这是最后一次做这件事，你会怎样完成它？', author:'松浦弥太郎', book_title:'100个基本', image_url:'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'把每一天当作最后一刻来珍惜。', mood:'温暖' },
+      { id:'q034', quote:'世の中のことは、ただ見るにつけて、心に留まるものぞかし。', author:'吉田兼好', book_title:'徒然草', image_url:'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1920&q=80', image_credit:'roaming_angel', developer_message:'世间万物，静观皆可入心。', mood:'禅意' },
+      { id:'q035', quote:'日日是好日。', author:'千利休', book_title:'禅林句集', image_url:'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=1920&q=80', image_credit:'kalenemsley', developer_message:'每一天，都是好日子。', mood:'宁静' },
+      { id:'q036', quote:'不存在十全十美的文章，如同不存在彻头彻尾的绝望。', author:'村上春树', book_title:'且听风吟', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'不完美，才是常态。', mood:'宁静' },
+      { id:'q037', quote:'死并非生的对立面，而作为生的一部分永存。', author:'村上春树', book_title:'挪威的森林', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'生死一体，珍惜当下。', mood:'深沉' },
+      { id:'q038', quote:'风起，唯有努力生存。', author:'宫泽贤治', book_title:'不畏风雨', image_url:'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=1920&q=80', image_credit:'kalenemsley', developer_message:'风再大，也要努力前行。', mood:'力量' },
+      { id:'q039', quote:'山在那里，静静地等着。', author:'植村直己', book_title:'极地探险家', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'山在那里，路在脚下。', mood:'辽阔' },
+      { id:'q040', quote:'旅行的好处在于可以暂时远离日常生活，还不必承担平日里琐碎的责任。', author:'村上春树', book_title:'远方的鼓声', image_url:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80', image_credit:'davidmarcu', developer_message:'偶尔出走，是为了更好地回来。', mood:'闲适' },
+      { id:'q041', quote:'雪融化了，会变成什么呢？——会变成春天啊。', author:'新美南吉', book_title:'蜗牛的悲哀', image_url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?w=1920&q=80', image_credit:'michalmatczuk', developer_message:'冬天总会过去，春天终会到来。', mood:'温暖' },
+      { id:'q042', quote:'我深怕自己本非美玉，故而不敢加以刻苦琢磨，却又半信自己是块美玉，故又不肯庸庸碌碌，与瓦砾为伍。', author:'中岛敦', book_title:'山月记', image_url:'https://images.unsplash.com/photo-1518173946687-a36f968f7e98?w=1920&q=80', image_credit:'zoltantasi', developer_message:'接纳自己，无论美玉还是瓦砾。', mood:'哲思' },
+      // ===== 西方哲学与文学 =====
+      { id:'q043', quote:'在隆冬，我终于知道，我身上有一个不可战胜的夏天。', author:'阿尔贝·加缪', book_title:'重返蒂巴萨', image_url:'https://images.unsplash.com/photo-1510797215324-95aa89f43c33?w=1920&q=80', image_credit:'nathananderson', developer_message:'无论身处怎样的寒冬，心底的夏天永不熄灭。', mood:'力量' },
+      { id:'q044', quote:'时间是组成我的物质。时间是一条载我而去的河流，但我就是那条河流。', author:'豪尔赫·路易斯·博尔赫斯', book_title:'探讨别集', image_url:'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=1920&q=80', image_credit:'nathananderson', developer_message:'你不是在时间里漂流，你就是时间本身。', mood:'哲思' },
+      { id:'q045', quote:'我对任何唾手可得、快速、出自本能、即兴、含混的事物没有信心。我相信缓慢、平和、细水长流的力量，踏实，冷静。', author:'伊塔洛·卡尔维诺', book_title:'巴黎隐士', image_url:'https://images.unsplash.com/photo-1440581572842-9e4a284d0e5c?w=1920&q=80', image_credit:'jplenio', developer_message:'慢下来，让力量在安静中生长。', mood:'宁静' },
+      { id:'q046', quote:'要有耐心，对一切尚未解决的事保持耐心，要学会热爱提问本身。也许你终将逐渐地，在不知不觉中，活到答案的那一天。', author:'莱内·马利亚·里尔克', book_title:'给青年诗人的信', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'答案不在远方，它在你认真生活的每一天里。', mood:'温暖' },
+      { id:'q047', quote:'我不匆忙。太阳和月亮也不匆忙。没有人比他们的腿更匆忙。', author:'费尔南多·佩索阿', book_title:'惶然录', image_url:'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'太阳从不匆忙，你也一样。', mood:'闲适' },
+      // ===== 西方哲学与文学（续） =====
+      { id:'q048', quote:'我们必须在无法选择的情况下，仍然选择做正确的事。', author:'阿尔贝·加缪', book_title:'西西弗神话', image_url:'https://images.unsplash.com/photo-1465056504217-5e2c5a7d6e7e?w=1920&q=80', image_credit:'davidmarcu', developer_message:'即使巨石一次次滚落，攀登本身已足以充实心灵。', mood:'力量' },
+      { id:'q049', quote:'当一个人不能拥有的时候，他唯一能做的便是不要忘记。', author:'马塞尔·普鲁斯特', book_title:'追忆似水年华', image_url:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=1920&q=80', image_credit:'pawel_czerwinski', developer_message:'记忆，是另一种形式的拥有。', mood:'感怀' },
+      { id:'q050', quote:'生活是世上最罕见的事情，大多数人只是存在，仅此而已。', author:'奥斯卡·王尔德', book_title:'道林·格雷的画像', image_url:'https://images.unsplash.com/photo-1439853949127-fa647821eba0?w=1920&q=80', image_credit:'dross2001', developer_message:'存在很容易，生活却需要勇气。', mood:'哲思' },
+      { id:'q051', quote:'往外看的人，在做梦；往内看的人，在醒来。', author:'卡尔·荣格', book_title:'回忆·梦·思考', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'向内看，才能真正醒来。', mood:'宁静' },
+      { id:'q052', quote:'在刺激与反应之间，有一个空间。在那个空间里，是我们选择反应的自由和力量。', author:'维克多·弗兰克尔', book_title:'活出生命的意义', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'你永远拥有选择如何回应的自由。', mood:'力量' },
+      { id:'q053', quote:'你改变不了一座山的轮廓，改变不了一只鸟的飞翔轨迹，改变不了河水流淌的速度，所以只是观察它，发现它的美就够了。', author:'吉杜·克里希那穆提', book_title:'生命之书', image_url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'不改变，只观察——美就在那里。', mood:'宁静' },
+      { id:'q054', quote:'生命不是要超越别人，而是要超越自己。', author:'卡尔·荣格', book_title:'荣格自传', image_url:'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80', image_credit:'marcuslenk', developer_message:'真正的对手，从来都是昨天的自己。', mood:'力量' },
+      { id:'q055', quote:'我们一直寻找的，却是自己原本早已拥有的；我们总是东张西望，唯独漏了自己想要的，这就是我们至今难以如愿以偿的原因。', author:'柏拉图', book_title:'理想国', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'你寻找的，其实早已拥有。', mood:'哲思' },
+      { id:'q056', quote:'幸福不是拥有你想要的，而是珍惜你所拥有的。', author:'伊壁鸠鲁', book_title:'伦理学', image_url:'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=1920&q=80', image_credit:'anniespratt', developer_message:'珍惜已有，便是幸福。', mood:'温暖' },
+      { id:'q057', quote:'人的内心，既是一所监狱，也是一座花园。', author:'安德烈·纪德', book_title:'人间食粮', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'你的内心，由你选择是监狱还是花园。', mood:'宁静' },
+      // ===== 自然文学与生态 =====
+      { id:'q058', quote:'走进山林就是回家。大自然将抚去你身上的尘埃，让灵魂重新变得清澈。', author:'约翰·缪尔', book_title:'夏日走过山间', image_url:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80', image_credit:'kalenemsley', developer_message:'山林永远敞开怀抱，等你回家。', mood:'宁静' },
+      { id:'q059', quote:'我步入丛林，因为我希望活得从容，只面对生活的基本事实，看看我是否能学到生活要教给我的东西，而不是到了临终时，才发现自己根本没有活过。', author:'亨利·戴维·梭罗', book_title:'瓦尔登湖', image_url:'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=1920&q=80', image_credit:'marcuslenk', developer_message:'活得简单，才能活得丰盛。', mood:'辽阔' },
+      { id:'q060', quote:'那些能感受到大地之美的人，将在余生中拥有取之不尽的力量。', author:'蕾切尔·卡森', book_title:'寂静的春天', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'大地之美，是永不枯竭的力量源泉。', mood:'温暖' },
+      { id:'q061', quote:'我长久地凝视着一朵花，然后发现整个世界都在其中。', author:'约翰·缪尔', book_title:'我的童年和青年', image_url:'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=1920&q=80', image_credit:'anniespratt', developer_message:'一花一世界，一叶一菩提。', mood:'禅意' },
+      { id:'q062', quote:'我愿深深地扎入生活，吮尽生活的骨髓，过得扎实、简单，把一切不属于生活的内容剔除得干净利落。', author:'亨利·戴维·梭罗', book_title:'瓦尔登湖', image_url:'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1920&q=80', image_credit:'jplenio', developer_message:'简单，是最深刻的丰盛。', mood:'宁静' },
+      { id:'q063', quote:'当华美的叶片落尽，生命的脉络才历历可见。', author:'巴勃罗·聂鲁达', book_title:'二十首情诗与绝望的歌', image_url:'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'失去，有时是为了让我们看清本质。', mood:'感怀' },
+      { id:'q064', quote:'我给你瘦落的街道、绝望的落日、荒郊的月亮。我给你一个久久地望着孤月的人的悲哀。', author:'豪尔赫·路易斯·博尔赫斯', book_title:'献给贝阿特丽斯·比维洛尼·韦伯斯特·德布尔里奇', image_url:'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=1920&q=80', image_credit:'wolfgang_hasselmann', developer_message:'孤独，是灵魂深处的辽阔。', mood:'辽阔' },
+      { id:'q065', quote:'鸟要挣脱出壳。蛋就是世界。谁要出生，就必须摧毁一个世界。', author:'赫尔曼·黑塞', book_title:'德米安', image_url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', image_credit:'milesb', developer_message:'每一次成长，都是一次破壳而出。', mood:'力量' },
+      { id:'q066', quote:'爱之于我，不是肌肤之亲，不是一蔬一饭，它是一种不死的欲望，是疲惫生活中的英雄梦想。', author:'玛格丽特·杜拉斯', book_title:'情人', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'爱，是平凡生活里最耀眼的光。', mood:'温暖' },
+      { id:'q067', quote:'世界以痛吻我，要我报之以歌。', author:'拉宾德拉纳特·泰戈尔', book_title:'飞鸟集', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'即使世界以痛相待，仍可报之以歌。', mood:'豁达' },
+      // ===== 心理学与自我成长 =====
+      { id:'q068', quote:'一个人真正的幸福，并不是待在光明之中。从远处凝望光明，朝它奋力奔去，就在那拼命忘我的时间里，才有人生真正的充实。', author:'安藤忠雄', book_title:'建筑家安藤忠雄', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'追逐光的过程，本身就是光。', mood:'力量' },
+      { id:'q069', quote:'接受自己原本的样子，是让伤口愈合的第一步。', author:'卡尔·罗杰斯', book_title:'论人的成长', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'接纳自己，是一切疗愈的开始。', mood:'温暖' },
+      { id:'q070', quote:'真正的发现之旅，不在于寻找新风景，而在于拥有新的眼睛。', author:'马塞尔·普鲁斯特', book_title:'追忆似水年华', image_url:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80', image_credit:'davidmarcu', developer_message:'换一个角度看世界，处处都是风景。', mood:'辽阔' },
+      { id:'q071', quote:'勇气并不是没有恐惧，而是面对恐惧时依然选择前行。', author:'纳尔逊·曼德拉', book_title:'漫漫自由路', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'勇气不是无所畏惧，而是心怀恐惧仍向前。', mood:'力量' },
+      { id:'q072', quote:'成为你自己。', author:'弗里德里希·尼采', book_title:'查拉图斯特拉如是说', image_url:'https://images.unsplash.com/photo-1518173946687-a36f968f7e98?w=1920&q=80', image_credit:'zoltantasi', developer_message:'成为自己，是一生最重要的功课。', mood:'力量' },
+      { id:'q073', quote:'人的一切痛苦，本质上都是对自己无能的愤怒。', author:'王小波', book_title:'黄金时代', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'接纳无能，才能超越无能。', mood:'哲思' },
+      { id:'q074', quote:'每一个不曾起舞的日子，都是对生命的辜负。', author:'弗里德里希·尼采', book_title:'查拉图斯特拉如是说', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'让每一天都成为一支舞。', mood:'温暖' },
+      { id:'q075', quote:'黑夜给了我黑色的眼睛，我却用它寻找光明。', author:'顾城', book_title:'一代人', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'即使在黑夜中，也要寻找光明。', mood:'力量' },
+      // ===== 更多中国文学 =====
+      { id:'q076', quote:'面朝大海，春暖花开。', author:'海子', book_title:'面朝大海，春暖花开', image_url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', image_credit:'seefromthesky', developer_message:'愿你面朝大海，心暖花开。', mood:'温暖' },
+      { id:'q077', quote:'人生自古谁无死，留取丹心照汗青。', author:'文天祥', book_title:'过零丁洋', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'丹心一片，照亮千古。', mood:'辽阔' },
+      { id:'q078', quote:'千山鸟飞绝，万径人踪灭。孤舟蓑笠翁，独钓寒江雪。', author:'柳宗元', book_title:'江雪', image_url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?w=1920&q=80', image_credit:'michalmatczuk', developer_message:'孤独，是一种境界。', mood:'宁静' },
+      { id:'q079', quote:'问君能有几多愁？恰似一江春水向东流。', author:'李煜', book_title:'虞美人', image_url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'愁如春水，终将东流。', mood:'感怀' },
+      { id:'q080', quote:'山重水复疑无路，柳暗花明又一村。', author:'陆游', book_title:'游山西村', image_url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80', image_credit:'davidmarcu', developer_message:'绝境之后，必有转机。', mood:'豁达' },
+      // ===== 更多西方文学 =====
+      { id:'q081', quote:'所有的大人都曾经是小孩，虽然，只有少数的人记得。', author:'安托万·德·圣-埃克苏佩里', book_title:'小王子', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'别忘了，你曾经也是个孩子。', mood:'温暖' },
+      { id:'q082', quote:'真正重要的东西，用眼睛是看不见的，要用心去看。', author:'安托万·德·圣-埃克苏佩里', book_title:'小王子', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'用心看，才能看见本质。', mood:'温暖' },
+      { id:'q083', quote:'如果你驯化了我，我们就彼此需要了。你对我来说，就是世界上唯一的了；我对你来说，也是世界上唯一的了。', author:'安托万·德·圣-埃克苏佩里', book_title:'小王子', image_url:'https://images.unsplash.com/photo-1440581572842-9e4a284d0e5c?w=1920&q=80', image_credit:'jplenio', developer_message:'建立联结，让彼此变得独一无二。', mood:'温暖' },
+      { id:'q084', quote:'生活总是让我们遍体鳞伤，但到后来，那些受伤的地方会变成我们最强壮的地方。', author:'欧内斯特·海明威', book_title:'老人与海', image_url:'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=1920&q=80', image_credit:'kalenemsley', developer_message:'伤痕，是生命赠予的勋章。', mood:'力量' },
+      { id:'q085', quote:'一个人可以被毁灭，但不能被打败。', author:'欧内斯特·海明威', book_title:'老人与海', image_url:'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80', image_credit:'marcuslenk', developer_message:'毁灭的是肉体，不败的是精神。', mood:'力量' },
+      // ===== 更多日本文学 =====
+      { id:'q086', quote:'夏が過ぎ、風あざみ。誰のあこがれにさまよう。', author:'松任谷由实', book_title:'ひこうき雲', image_url:'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'夏日将尽，风仍在吹。', mood:'感怀' },
+      { id:'q087', quote:'目に見えるものだけが、すべてじゃない。', author:'东野圭吾', book_title:'白夜行', image_url:'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1920&q=80', image_credit:'roaming_angel', developer_message:'眼见未必为实，用心感受。', mood:'哲思' },
+      { id:'q088', quote:'人生は、選択の連続だ。そして、どの選択が正しかったかは、後になってみないとわからない。', author:'村上春树', book_title:'世界の終りとハードボイルド・ワンダーランド', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'选择的对错，时间会告诉你。', mood:'宁静' },
+      { id:'q089', quote:'静寂は、言葉よりも多くを語る。', author:'川端康成', book_title:'雪国', image_url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?w=1920&q=80', image_credit:'michalmatczuk', developer_message:'静寂之中，自有千言万语。', mood:'宁静' },
+      { id:'q090', quote:'遠くに行くほど、近くのものが見えてくる。', author:'星野道夫', book_title:'森へ', image_url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', image_credit:'milesb', developer_message:'走得越远，越能看清身边的美好。', mood:'辽阔' },
+      // ===== 更多经典 =====
+      { id:'q091', quote:'To be, or not to be, that is the question.', author:'威廉·莎士比亚', book_title:'哈姆雷特', image_url:'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=1920&q=80', image_credit:'nathananderson', developer_message:'生存还是毁灭，这是一个问题。', mood:'哲思' },
+      { id:'q092', quote:'The unexamined life is not worth living.', author:'苏格拉底', book_title:'申辩篇', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'未经审视的人生，不值得过。', mood:'哲思' },
+      { id:'q093', quote:'Carpe diem, quam minimum credula postero.', author:'贺拉斯', book_title:'颂歌集', image_url:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'活在当下，勿信明天。', mood:'豁达' },
+      { id:'q094', quote:'认识你自己。', author:'泰勒斯', book_title:'箴言', image_url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', image_credit:'nevenkrcmarek', developer_message:'认识自己，是一切智慧的开始。', mood:'宁静' },
+      { id:'q095', quote:'唯一不变的是变化本身。', author:'赫拉克利特', book_title:'残篇', image_url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80', image_credit:'davidmarcu', developer_message:'拥抱变化，因为变化是唯一的不变。', mood:'豁达' },
+      { id:'q096', quote:'世界上只有一种真正的英雄主义，那就是在认清生活真相之后依然热爱生活。', author:'罗曼·罗兰', book_title:'米开朗琪罗传', image_url:'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80', image_credit:'thoughtcatalog', developer_message:'看清生活的真相，依然热爱它。', mood:'力量' },
+      { id:'q097', quote:'读书是在别人思想的帮助下，建立自己的思想。', author:'鲁巴金', book_title:'读书箴言', image_url:'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=1920&q=80', image_credit:'sakulich', developer_message:'阅读，是与伟大灵魂的对话。', mood:'宁静' },
+      { id:'q098', quote:'人生而自由，却无往不在枷锁之中。', author:'让-雅克·卢梭', book_title:'社会契约论', image_url:'https://images.unsplash.com/photo-1440581572842-9e4a284d0e5c?w=1920&q=80', image_credit:'jplenio', developer_message:'真正的自由，来自内心的觉醒。', mood:'哲思' },
+      { id:'q099', quote:'我思故我在。', author:'勒内·笛卡尔', book_title:'方法论', image_url:'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=1920&q=80', image_credit:'nathananderson', developer_message:'思考，是存在的证明。', mood:'哲思' },
+      { id:'q100', quote:'存在先于本质。', author:'让-保罗·萨特', book_title:'存在主义是一种人道主义', image_url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', image_credit:'eberhard 🖐 grossgasteiger', developer_message:'你先存在，然后定义自己。', mood:'哲思' },
+      { id:'q101', quote:'道可道，非常道；名可名，非常名。', author:'老子', book_title:'道德经·第一章', image_url:'https://images.unsplash.com/photo-1470071459604-7b8ec44ffd4b?w=1920&q=80', image_credit:'v2osk', developer_message:'可说的道，不是永恒的道。', mood:'禅意' },
+      { id:'q102', quote:'菩提本无树，明镜亦非台。本来无一物，何处惹尘埃。', author:'慧能', book_title:'六祖坛经', image_url:'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=1920&q=80', image_credit:'kalenemsley', developer_message:'心本无物，何来尘埃。', mood:'禅意' },
+      { id:'q103', quote:'一切有为法，如梦幻泡影，如露亦如电，应作如是观。', author:'鸠摩罗什（译）', book_title:'金刚经', image_url:'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1920&q=80', image_credit:'roaming_angel', developer_message:'万法皆空，珍惜当下。', mood:'禅意' },
+      { id:'q104', quote:'春有百花秋有月，夏有凉风冬有雪。若无闲事挂心头，便是人间好时节。', author:'无门慧开', book_title:'无门关', image_url:'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=1920&q=80', image_credit:'anniespratt', developer_message:'心无挂碍，日日是好日。', mood:'宁静' },
+      { id:'q105', quote:'应无所住而生其心。', author:'鸠摩罗什（译）', book_title:'金刚经', image_url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', image_credit:'sebastian_unrau', developer_message:'不执着于任何事物，心才能自由。', mood:'禅意' }
+    ];
+
+    var totalQuotes = quotes.length;
+
+    function getRandomQuote() {
+      var idx = Math.floor(Math.random() * totalQuotes);
+      return { quote: quotes[idx], index: idx };
+    }
+
+    var currentQuote = null;
+    var isTransitioning = false;
+    var currentIndex = 0;
+
+    // 随机切换队列：Fisher-Yates 洗牌，确保不重复随机
+    var shuffleQueue = [];
+    var shuffleIndex = 0;
+
+    function buildShuffleQueue(excludeIndex) {
+      var arr = [];
+      for (var i = 0; i < totalQuotes; i++) {
+        if (i !== excludeIndex) arr.push(i);
+      }
+      for (var j = arr.length - 1; j > 0; j--) {
+        var k = Math.floor(Math.random() * (j + 1));
+        var tmp = arr[j];
+        arr[j] = arr[k];
+        arr[k] = tmp;
+      }
+      return arr;
+    }
+
+    var quoteTextEl = document.getElementById('quote-text');
+    var quoteSourceEl = document.getElementById('quote-source');
+    var devMessageEl = document.getElementById('dev-message');
+    var quoteContainerEl = document.getElementById('quote-container');
+    var bgPlaceholderEl = document.getElementById('bg-placeholder');
+    var bgFullEl = document.getElementById('bg-full');
+
+    function resizeImageUrl(url, params) {
+      var baseUrl = url.split('?')[0];
+      return baseUrl + '?' + params;
+    }
+
+    function initApp() {
+      // 每次打开随机选择一条书摘
+      var result = getRandomQuote();
+      currentQuote = result.quote;
+      currentIndex = result.index;
+      // 初始化随机队列，排除当前索引
+      shuffleQueue = buildShuffleQueue(currentIndex);
+      shuffleIndex = 0;
+      renderQuote(currentQuote);
+      loadBackgroundImage(currentQuote.image_url);
+      triggerEntranceAnimation();
+    }
+
+    function renderQuote(quote) {
+      quoteTextEl.textContent = quote.quote;
+      quoteSourceEl.textContent = quote.author + ' · ' + quote.book_title;
+      var message = quote.developer_message || '愿你在忙碌中，仍记得心中那片山水。';
+      devMessageEl.textContent = message;
+    }
+
+    function loadBackgroundImage(url) {
+      var thumbUrl = resizeImageUrl(url, 'w=50&q=20');
+      var fullUrl = resizeImageUrl(url, 'w=1920&q=80');
+      bgPlaceholderEl.src = thumbUrl;
+      bgPlaceholderEl.classList.add('visible');
+      var fullImage = new Image();
+      fullImage.onload = function() {
+        bgFullEl.src = fullUrl;
+        requestAnimationFrame(function() {
+          bgFullEl.classList.add('visible');
+        });
+      };
+      fullImage.onerror = function() {
+        bgPlaceholderEl.style.filter = 'none';
+        bgPlaceholderEl.style.transform = 'none';
+      };
+      fullImage.src = fullUrl;
+    }
+
+    function triggerEntranceAnimation() {
+      quoteTextEl.classList.add('anim-ready');
+      quoteSourceEl.classList.add('anim-ready');
+      devMessageEl.classList.add('anim-ready');
+      requestAnimationFrame(function() {
+        quoteTextEl.classList.remove('anim-ready');
+        quoteTextEl.classList.add('animate-enter');
+        quoteSourceEl.classList.remove('anim-ready');
+        quoteSourceEl.classList.add('animate-enter-delayed-1');
+        devMessageEl.classList.remove('anim-ready');
+        devMessageEl.classList.add('animate-enter-delayed-2');
+      });
+    }
+
+    function switchToNextQuote() {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      quoteContainerEl.classList.add('switching');
+      quoteTextEl.classList.remove('animate-enter');
+      quoteSourceEl.classList.remove('animate-enter-delayed-1');
+      devMessageEl.classList.remove('animate-enter-delayed-2');
+      quoteTextEl.classList.add('animate-exit');
+      quoteSourceEl.classList.add('animate-exit');
+      devMessageEl.classList.add('animate-exit');
+      setTimeout(function() {
+        // 从随机队列中取下一个
+        if (shuffleIndex >= shuffleQueue.length) {
+          // 全部轮完，重新洗牌（排除当前索引）
+          shuffleQueue = buildShuffleQueue(currentIndex);
+          shuffleIndex = 0;
+        }
+        var nextIdx = shuffleQueue[shuffleIndex];
+        shuffleIndex++;
+        var nextQuote = quotes[nextIdx];
+        currentIndex = nextIdx;
+        currentQuote = nextQuote;
+        renderQuote(nextQuote);
+        loadBackgroundImage(nextQuote.image_url);
+        quoteContainerEl.classList.remove('switching');
+        quoteTextEl.classList.remove('animate-exit');
+        quoteSourceEl.classList.remove('animate-exit');
+        devMessageEl.classList.remove('animate-exit');
+        triggerEntranceAnimation();
+        isTransitioning = false;
+      }, 600);
+    }
+
+    function bindEvents() {
+      document.addEventListener('click', switchToNextQuote);
+      var touchHandled = false;
+      document.addEventListener('touchstart', function() {
+        touchHandled = false;
+      }, { passive: true });
+      document.addEventListener('touchend', function() {
+        if (!touchHandled) {
+          touchHandled = true;
+          switchToNextQuote();
+        }
+      }, { passive: true });
+    }
+
+    // ===== 启动页逻辑 =====
+    var splashScreen = document.getElementById('splash-screen');
+
+    function hideSplash() {
+      if (!splashScreen) return;
+      splashScreen.classList.add('fade-out');
+      setTimeout(function() {
+        splashScreen.classList.add('hidden');
+      }, 1500);
+    }
+
+    // ===== 启动应用 =====
+    initApp();
+    bindEvents();
+    setTimeout(hideSplash, 1800);
+  </script>
+</body>
+</html>
